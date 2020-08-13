@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken";
 // import { Refresh } from "../models/Refresh";
 import { BadRequest, Unauthorized } from "./response";
 import { RequestHandler, Request, Response, NextFunction } from "express";
+import Joi, { ValidationError } from "@hapi/joi";
 export const generateGuid = () => {
   let result = "";
   for (let j = 0; j < 32; j++) {
@@ -15,8 +16,8 @@ export const generateGuid = () => {
 };
 
 export const generateToken = (userId: string) => {
-  const exp = Math.floor(Date.now() / 1000) + parseInt(process.env.JWT_EXP!);
-  var token = jwt.sign({ userId, exp }, process.env.JWT_SECRET!);
+  // const exp = Math.floor(Date.now() / 1000) + parseInt(process.env.JWT_EXP!);
+  var token = jwt.sign({ userId }, process.env.JWT_SECRET!);
   return token;
 };
 
@@ -39,16 +40,27 @@ export const extractToken = async (
       const decoded = jwt.decode(token, { complete: true });
 
       req.headers.userId = (decoded as any).payload.userId;
-
       next();
     } catch (error) {
-      throw new Unauthorized();
+      next(new Unauthorized());
     }
   } else {
-    throw new Unauthorized();
+    next(new Unauthorized());
   }
   return null;
 };
+
+export async function validateRequest<T>(
+  schema: Joi.Schema,
+  request: T
+): Promise<T> {
+  try {
+    await schema.validate(request, { abortEarly: false });
+    return request;
+  } catch (error) {
+    throw new BadRequest(error);
+  }
+}
 
 // export const generateRefreshToken = async (token: string, userId: string) => {
 //   try {
