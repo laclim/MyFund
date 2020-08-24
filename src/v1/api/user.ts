@@ -4,7 +4,11 @@ import { userSchema, loginSchema } from "../validation.ts/user";
 import { BadRequest, DataResponse } from "../response";
 import { ErrorStatus, Status, IStatus } from "../../error";
 import { User, IUser } from "../model/user";
+import { FundDB } from "../model/fund";
+import { PortfolioDB } from "../model/portfolio";
 
+const fundDB = new FundDB();
+const portfolioDB = new PortfolioDB();
 export const addUser = async (
   req: Request,
   res: Response,
@@ -14,8 +18,12 @@ export const addUser = async (
   await validateRequest(userSchema, req.body);
 
   const { email, password, name } = req.body;
-  const result = await User.create({ email, password, name });
-  const data = { id: result.id };
+  const user = await User.create({ email, password, name });
+  if (user) {
+    const portfolio = await portfolioDB.createPortfolio(user._id);
+    await fundDB.createFund(user._id, 0, portfolio._id);
+  }
+  const data = { id: user.id };
 
   DataResponse(res, status.getStatusList(), data);
 };

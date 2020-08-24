@@ -6,6 +6,10 @@ import * as csv from "fast-csv";
 import { DataResponse } from "../response";
 import { Status, ErrorStatus } from "../../error";
 import { IMarket, IPriceSchema, MarketDB } from "../model/market";
+import moment from "moment";
+import { calcPortfolioProfit } from "../../crawlPrice";
+import { validateRequest } from "../utility";
+import { updateMarketSchema } from "../validation.ts/user";
 
 const marketDB = new MarketDB();
 export const createMarket = async (
@@ -15,7 +19,7 @@ export const createMarket = async (
 ) => {
   const status = new Status();
   const file = req.file;
-  const { marketCode, type } = req.body;
+  const { marketCode, type, quote } = req.body;
 
   let price: IPriceSchema[] = [];
 
@@ -41,7 +45,7 @@ export const createMarket = async (
           .on("end", async (rowCount: number) => {
             console.log(`Parsed ${rowCount} rows`);
             try {
-              doc = await marketDB.createMarket(marketCode, type, price);
+              doc = await marketDB.createMarket({ marketCode, type, price });
               resolve(doc);
             } catch (error) {
               reject(error);
@@ -51,7 +55,7 @@ export const createMarket = async (
       });
     await readAndWriteToCol(); // run syncronize
   } else if (!file) {
-    doc = await marketDB.createMarket(marketCode, type);
+    doc = await marketDB.createMarket({ marketCode, type, quote });
   }
 
   if (status.getStatusList().length) {
@@ -67,10 +71,19 @@ export const updateMarketPrice = async (
   res: Response,
   next: NextFunction
 ) => {
+  const marketCode = req.params.marketCode;
   const status = new Status();
-  const doc = await marketDB.updateMarketPrice("AAPL", [
-    { date: new Date(), closingPrice: 23 },
-  ]);
+  const { active, quote, type } = await validateRequest(
+    updateMarketSchema,
+    req.body
+  );
+
+  const doc = await marketDB.updateMarketDetails({
+    marketCode,
+    active,
+    quote,
+    type,
+  });
   DataResponse(res, status.getStatusList(), doc);
 };
 
@@ -80,7 +93,31 @@ export const getMarket = async (
   next: NextFunction
 ) => {
   const status = new Status();
-  const doc = await marketDB.getMarket("AAPL");
+  const id = req.params.id;
+  const doc = await marketDB.getMarket(id);
   // doc?.price?.reverse();
   DataResponse(res, status.getStatusList(), doc);
+};
+
+export const getMarkets = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const status = new Status();
+  let marketCodes = req.query.marketCodes;
+  marketCodes = (marketCodes as string).split(",");
+  const doc = await marketDB.getMarkets(marketCodes);
+  // doc?.price?.reverse();
+  DataResponse(res, status.getStatusList(), doc);
+};
+
+export const updatePortfolioHistory = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const status = new Status();
+  const doc = await calcPortfolioProfit();
+  DataResponse(res, status.getStatusList());
 };

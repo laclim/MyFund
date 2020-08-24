@@ -27,15 +27,24 @@ export const fundSchema = Joi.object({
   amount: Joi.number().positive().required(),
 });
 
-export const investFundSchema = Joi.object({
-  market: Joi.any().allow("ETF", "STOCK", "INDEX"),
-  quote: Joi.string().required(),
-  description: Joi.string(),
+export const investSchema = Joi.object({
+  market: Joi.string().required(),
+  // amount: Joi.number().positive().required(),
+  volume: Joi.number().positive().required(),
+  tradedPrice: Joi.number().positive().required(),
+  tradedAt: Joi.date(),
+  type: Joi.string().valid("BUY", "SELL").required(),
 });
 
 export const tradeHistorySchema = Joi.object({
   market: Joi.string().required(),
   tradedPrice: Joi.number().required(),
-  type: Joi.any().allow("BUY", "SELL").required(),
+  type: Joi.string().valid("BUY", "SELL").required(),
   tradedAt: Joi.date(),
+});
+
+export const updateMarketSchema = Joi.object({
+  quote: Joi.string(),
+  active: Joi.boolean(),
+  type: Joi.string().valid("ETF", "STOCK", "INDEX"),
 });

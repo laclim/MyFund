@@ -6,6 +6,9 @@ export enum ErrorStatus {
   INVALID_CREDENTIALS = "INVALID_CREDENTIALS",
   MARKET_CODE_EXIST = "MARKET_CODE_EXIST",
   INVALID_MARKET_COL = "INVALID_MARKET_COL",
+  NO_RECORD_FOUND = "NO_RECORD_FOUND",
+  INVEST_NOT_VALID = "INVEST_NOT_VALID",
+  PORTFOLIO_AMOUNT_NOT_MATCH = "PORTFOLIO_AMOUNT_NOT_MATCH",
 }
 
 export interface IStatus {
@@ -54,7 +57,25 @@ export class Status {
           statusMessage: "market collection invalid",
         };
         break;
-
+      case ErrorStatus.NO_RECORD_FOUND:
+        status = {
+          statusCode: 1006,
+          statusMessage: "no record found",
+        };
+        break;
+      case ErrorStatus.INVEST_NOT_VALID:
+        status = {
+          statusCode: 1007,
+          statusMessage: "possible not enough amount",
+        };
+        break;
+      case ErrorStatus.PORTFOLIO_AMOUNT_NOT_MATCH:
+        status = {
+          statusCode: 1008,
+          statusMessage:
+            "does not match your portfolio amount or you dont own this market",
+        };
+        break;
       default:
         break;
     }

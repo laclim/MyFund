@@ -1,8 +1,9 @@
 import { IUser } from "./user";
 import { Schema, model, Document, Model } from "mongoose";
 import { IMarket } from "./market";
+import { IFund } from "./fund";
 
-enum ITradeType {
+export enum ITradeType {
   SELL = "SELL",
   BUY = "BUY",
 }
@@ -12,6 +13,7 @@ export interface ITradeHistory extends Document {
   type: ITradeType;
   market: IMarket["_id"];
   amount: number;
+  volume: number;
   tradedPrice: number;
   tradedAt?: Date;
 }
@@ -43,6 +45,7 @@ const schema = new Schema(
     type: { type: String, enum: ["BUY", "SELL"], required: true },
     // profitPercentage: Number,
     // profitAmount: Number,
+    volume: { type: Number, required: true },
     amount: { type: Number, required: true },
     tradedPrice: { type: Number, required: true },
     tradedAt: { type: Date, default: new Date() },
@@ -64,9 +67,10 @@ export class TradeHistoryDB {
     this.db = TradeHistory;
   }
 
-  async buy({
+  async trade({
     user,
     market,
+    volume,
     tradedPrice,
     amount,
     tradedAt,
@@ -74,16 +78,19 @@ export class TradeHistoryDB {
   }: {
     user: IUser["_id"];
     market: IMarket["_id"];
+    volume: number;
     tradedPrice: number;
     amount: number;
     tradedAt?: Date;
     type: ITradeType;
+    fundId: IFund["_id"];
   }) {
     const doc = await TradeHistory.create({
       user,
       type,
       market,
       amount,
+      volume,
       tradedPrice,
       tradedAt,
     });

@@ -1,23 +1,25 @@
 import Router, { NextFunction, Response, Request } from "express";
 import { trycatch, validateRequest } from "../utility";
 import { DataResponse } from "../response";
-import { Status } from "../../error";
-import { Fund, updateFund, createFund, IFund, getFundDB } from "../model/fund";
-import { fundSchema, investFundSchema } from "../validation.ts/user";
+import { Status, ErrorStatus } from "../../error";
+import { Fund, IFund, FundDB } from "../model/fund";
+import { fundSchema, investSchema } from "../validation.ts/user";
 import { ObjectID } from "mongodb";
+import {
+  ITradeHistory,
+  TradeHistory,
+  TradeHistoryDB,
+  ITradeType,
+} from "../model/tradeHistory";
+import { PortfolioDB } from "../model/portfolio";
 
 interface fundRequest {
   amount: number;
 }
 
-interface investFundRequest {
-  quote: string;
-  amount: number;
-  price: number;
-
-  description: string;
-}
-
+const fundDB = new FundDB();
+const tradeHistortryDB = new TradeHistoryDB();
+const portfolioDB = new PortfolioDB();
 export const addFund = async (
   req: Request,
   res: Response,
@@ -27,15 +29,10 @@ export const addFund = async (
 
   const { amount } = await validateRequest(fundSchema, req.body as fundRequest);
   const user = req.headers.userId as string;
-  let fund: IFund | null;
-  fund = await updateFund(user, amount);
 
-  if (!fund) {
-    fund = await createFund(user, amount);
-  }
+  const fund = await fundDB.topUp(user, amount);
 
-  const data = { fund };
-  DataResponse(res, statusList.getStatusList(), data);
+  DataResponse(res, statusList.getStatusList(), fund);
 };
 
 export const getFund = async (
@@ -43,18 +40,83 @@ export const getFund = async (
   res: Response,
   next: NextFunction
 ) => {
+  let data = {};
   const statusList = new Status();
   const userId = req.params.id;
-  const fund = await getFundDB(userId);
-  DataResponse(res, statusList.getStatusList(), fund);
+  const fund = await fundDB.getFund(userId);
+
+  if (fund) {
+    data = { ...data, fund };
+
+    DataResponse(res, statusList.getStatusList(), fund);
+  } else {
+    statusList.addStatus(ErrorStatus.NO_RECORD_FOUND);
+    DataResponse(res, statusList.getStatusList());
+  }
 };
+
 export const investFund = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
-  const { description, quote } = await validateRequest(
-    investFundSchema,
-    req.body as investFundRequest
+  const status = new Status();
+  const { market, tradedPrice, tradedAt, type, volume } = await validateRequest(
+    investSchema,
+    req.body
   );
+  const amount = +(volume * tradedPrice).toFixed(4);
+  const user = req.headers.userId;
+  let doc;
+  const portfolioId = await fundDB.getPortfolioId(user);
+
+  let fundId = null;
+  if (type === ITradeType.BUY) {
+    const isInvestValid = await fundDB.isInvestValid(user, amount);
+    if (isInvestValid) {
+      const addPortfolioMarket = await portfolioDB.addPortfolioAmount({
+        id: portfolioId,
+        tradedPrice,
+        market,
+        volume,
+        amount,
+      });
+      const fund = await fundDB.updateAmount({ user, addedAmount: -amount });
+      if (fund && addPortfolioMarket) {
+        fundId = fund._id;
+      }
+    } else {
+      status.addStatus(ErrorStatus.INVEST_NOT_VALID);
+    }
+  } else {
+    const isSellValid = await portfolioDB.sellPortfolioAmount({
+      id: portfolioId,
+      market,
+      amount,
+      // tradedPrice,
+      volume,
+    });
+    if (isSellValid) {
+      const fund = await fundDB.updateAmount({ user, addedAmount: amount });
+      if (fund) {
+        fundId = fund._id;
+      }
+    } else {
+      status.addStatus(ErrorStatus.PORTFOLIO_AMOUNT_NOT_MATCH);
+    }
+  }
+
+  if (fundId) {
+    await tradeHistortryDB.trade({
+      user,
+      volume,
+      amount,
+      market,
+      tradedPrice,
+      type,
+      fundId: fundId,
+    });
+  }
+
+  DataResponse(res, status.getStatusList(), doc);
 };

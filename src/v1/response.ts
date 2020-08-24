@@ -21,10 +21,11 @@ export class Unauthorized extends HttpError {
 export function DataResponse(
   res: Response,
   statusList: IStatus[],
-  data?: object | null
+  data?: object | null,
+  message?: string | null
 ) {
   if (!statusList.length) {
     res.json({ statusList, data });
-  } else res.status(400).json({ statusList, data });
+  } else res.status(400).json({ statusList, data, message });
   return null;
 }

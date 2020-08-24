@@ -26,18 +26,18 @@ export const createTradeHistory = async (
     type,
     amount,
   } = req.body as ITradeHistory;
-  await validateRequest(tradeHistorySchema, req.body);
-  const user = req.headers.userId;
-  const doc = await tradeHistoryDB.buy({
-    user,
-    tradedPrice,
-    market,
-    amount,
-    type,
-    tradedAt,
-  });
-  if (doc) {
-    DataResponse(res, status.getStatusList(), doc);
-  } else {
-  }
+  // await validateRequest(tradeHistorySchema, req.body);
+  // const user = req.headers.userId;
+  // const doc = await tradeHistoryDB.buy({
+  //   user,
+  //   tradedPrice,
+  //   market,
+  //   amount,
+  //   type,
+  //   tradedAt,
+  // });
+  // if (doc) {
+  //   DataResponse(res, status.getStatusList(), doc);
+  // } else {
+  // }
 };
