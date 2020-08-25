@@ -2,7 +2,7 @@ import cron from "node-cron";
 
 import { PortfolioDB } from "./v1/model/portfolio";
 
-import { IMarket, MarketDB } from "./v1/model/market";
+import { IMarket, MarketDB, marketType } from "./v1/model/market";
 import { HistoryPortfolioDB } from "./v1/model/historyPortfolio";
 import Axios from "axios";
 import { load, html } from "cheerio";
@@ -69,24 +69,53 @@ async function getLatestMarket() {
   const marketList = await marketDB.getList();
   for (let market of marketList) {
     console.log(market.quote);
-    const closingPrice = await getQuotePrice(market.quote!);
+    const closingPrice = await getQuotePrice(market.type, market.quote!);
     await updateMarketPrice(market._id, closingPrice);
   }
 }
 
-async function getQuotePrice(quote: string): Promise<number> {
+async function getQuotePrice(type: marketType, quote: string): Promise<number> {
   return new Promise(async (resolve) => {
-    fetch(`https://finance.yahoo.com/quote/${quote}/`).then(async (res) => {
-      const $ = load(await res.text(), { xmlMode: true });
-      //   const str = $("script[type='text/javascript']")[0].children[0].data;
-      const price = parseFloat(
-        $("#quote-header-info").find("span[data-reactid='32']").text()
-      );
-      //   const strreg = str.match(/DARLA_CONFIG = ([^;]*);/)[1];
-      //   console.log(strreg);
-      //   var months = JSON.parse(strreg);
-      console.log(price);
+    // fetch(`https://finance.yahoo.com/quote/${quote}/`).then(async (res) => {
+    //   const $ = load(await res.text(), { xmlMode: true });
+    //   //   const str = $("script[type='text/javascript']")[0].children[0].data;
+    //   const price = parseFloat(
+    //     $("#quote-header-info").find("span[data-reactid='32']").text()
+    //   );
+    //   //   const strreg = str.match(/DARLA_CONFIG = ([^;]*);/)[1];
+    //   //   console.log(strreg);
+    //   //   var months = JSON.parse(strreg);
+    //   console.log(price);
 
+    //   resolve(price);
+    // });
+    let marketT;
+    switch (type) {
+      case marketType.ETF:
+        marketT = "etfs";
+        break;
+
+      case marketType.STOCK:
+        marketT = "equities";
+        break;
+      case marketType.INDEX:
+        marketT = "indices";
+        break;
+
+      default:
+        break;
+    }
+
+    Axios.get(`https://www.investing.com/${marketT}/${quote}`).then((res) => {
+      const $ = load(res.data, { xmlMode: true });
+
+      const price = parseFloat(
+        $(".overViewBox.instrument").find("#last_last").text()
+      );
+      //   //   const strreg = str.match(/DARLA_CONFIG = ([^;]*);/)[1];
+      //   //   console.log(strreg);
+      //   //   var months = JSON.parse(strreg);
+      console.log(price);
       resolve(price);
     });
   });
