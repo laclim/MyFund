@@ -68,6 +68,7 @@ async function getLatestMarket() {
   const marketDB = new MarketDB();
   const marketList = await marketDB.getList();
   for (let market of marketList) {
+    console.log(market.quote);
     const closingPrice = await getQuotePrice(market.quote!);
     await updateMarketPrice(market._id, closingPrice);
   }
