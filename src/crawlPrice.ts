@@ -76,9 +76,11 @@ async function getLatestMarket() {
 async function getQuotePrice(quote: string): Promise<number> {
   return new Promise(async (resolve) => {
     await Axios.get(`https://finance.yahoo.com/quote/${quote}/`).then((res) => {
-      console.log(res);
       const $ = load(res.data);
       const price = parseFloat(
+        $("#quote-header-info").find("span[data-reactid='32']").text()
+      );
+      console.log(
         $("#quote-header-info").find("span[data-reactid='32']").text()
       );
       resolve(price);
