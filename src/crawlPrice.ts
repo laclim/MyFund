@@ -5,7 +5,7 @@ import { PortfolioDB } from "./v1/model/portfolio";
 import { IMarket, MarketDB } from "./v1/model/market";
 import { HistoryPortfolioDB } from "./v1/model/historyPortfolio";
 import Axios from "axios";
-import { load } from "cheerio";
+import { load, html } from "cheerio";
 import moment from "moment-timezone";
 import { FundDB } from "./v1/model/fund";
 
@@ -76,14 +76,19 @@ async function getLatestMarket() {
 
 async function getQuotePrice(quote: string): Promise<number> {
   return new Promise(async (resolve) => {
-    await Axios.get(`https://finance.yahoo.com/quote/${quote}/`).then((res) => {
-      const $ = load(res.data);
+    Axios.get(`https://finance.yahoo.com/quote/${quote}/`, {
+      responseType: "document",
+    }).then((res) => {
+      const $ = load(res.data, { xmlMode: true });
+      //   const str = $("script[type='text/javascript']")[0].children[0].data;
       const price = parseFloat(
         $("#quote-header-info").find("span[data-reactid='32']").text()
       );
-      console.log(
-        $("#quote-header-info").find("span[data-reactid='32']").text()
-      );
+      //   const strreg = str.match(/DARLA_CONFIG = ([^;]*);/)[1];
+      //   console.log(strreg);
+      //   var months = JSON.parse(strreg);
+      console.log(price);
+
       resolve(price);
     });
   });
