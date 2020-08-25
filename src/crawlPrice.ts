@@ -1,5 +1,5 @@
 import cron from "node-cron";
-import {} from "cheerio";
+
 import { PortfolioDB } from "./v1/model/portfolio";
 
 import { IMarket, MarketDB } from "./v1/model/market";
@@ -8,7 +8,7 @@ import Axios from "axios";
 import { load, html } from "cheerio";
 import moment from "moment-timezone";
 import { FundDB } from "./v1/model/fund";
-
+import fetch from "node-fetch";
 console.log(moment().format("YYYY-MM-DD HH:MM"));
 export const task = cron.schedule(
   "30 21 * * *",
@@ -76,10 +76,8 @@ async function getLatestMarket() {
 
 async function getQuotePrice(quote: string): Promise<number> {
   return new Promise(async (resolve) => {
-    Axios.get(`https://finance.yahoo.com/quote/${quote}/`, {
-      responseType: "document",
-    }).then((res) => {
-      const $ = load(res.data, { xmlMode: true });
+    fetch(`https://finance.yahoo.com/quote/${quote}/`).then(async (res) => {
+      const $ = load(await res.text(), { xmlMode: true });
       //   const str = $("script[type='text/javascript']")[0].children[0].data;
       const price = parseFloat(
         $("#quote-header-info").find("span[data-reactid='32']").text()
