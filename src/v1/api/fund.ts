@@ -12,6 +12,7 @@ import {
   ITradeType,
 } from "../model/tradeHistory";
 import { PortfolioDB } from "../model/portfolio";
+import { MarketDB } from "../model/market";
 
 interface fundRequest {
   amount: number;
@@ -44,7 +45,7 @@ export const getFund = async (
   const statusList = new Status();
   const userId = req.params.id;
   const fund = await fundDB.getFund(userId);
-
+  console.log(process.env.NODE_ENV);
   if (fund) {
     data = { ...data, fund };
 
@@ -67,55 +68,65 @@ export const investFund = async (
   );
   const amount = +(volume * tradedPrice).toFixed(4);
   const user = req.headers.userId;
-  let doc;
+  let doc,
+    valid = false;
   const portfolioId = await fundDB.getPortfolioId(user);
-
-  let fundId = null;
-  if (type === ITradeType.BUY) {
-    const isInvestValid = await fundDB.isInvestValid(user, amount);
-    if (isInvestValid) {
-      const addPortfolioMarket = await portfolioDB.addPortfolioAmount({
+  const marketDB = new MarketDB();
+  const isMarketExist = await marketDB.isMarketExist(market);
+  if (!isMarketExist) {
+    status.addStatus(ErrorStatus.MARKET_NOT_CODE_EXIST);
+  } else {
+    valid = true;
+  }
+  if (valid) {
+    let fundId = null;
+    if (type === ITradeType.BUY && valid) {
+      const isInvestValid = await fundDB.isInvestValid(user, amount);
+      if (isInvestValid) {
+        const addPortfolioMarket = await portfolioDB.addPortfolioAmount({
+          id: portfolioId,
+          tradedPrice,
+          market,
+          volume,
+          amount,
+        });
+        const fund = await fundDB.updateAmount({ user, addedAmount: -amount });
+        if (fund && addPortfolioMarket) {
+          fundId = fund._id;
+        }
+      } else {
+        status.addStatus(ErrorStatus.INVEST_NOT_VALID);
+      }
+    } else {
+      const isSellValid = await portfolioDB.sellPortfolioAmount({
         id: portfolioId,
-        tradedPrice,
         market,
+        amount,
+        // tradedPrice,
+        volume,
+      });
+
+      if (isSellValid) {
+        const fund = await fundDB.updateAmount({ user, addedAmount: amount });
+        if (fund) {
+          fundId = fund._id;
+        }
+      } else {
+        status.addStatus(ErrorStatus.PORTFOLIO_AMOUNT_NOT_MATCH);
+      }
+    }
+
+    if (fundId) {
+      await tradeHistortryDB.trade({
+        user,
         volume,
         amount,
+        market,
+        tradedPrice,
+        type,
+        fundId: fundId,
       });
-      const fund = await fundDB.updateAmount({ user, addedAmount: -amount });
-      if (fund && addPortfolioMarket) {
-        fundId = fund._id;
-      }
-    } else {
-      status.addStatus(ErrorStatus.INVEST_NOT_VALID);
     }
-  } else {
-    const isSellValid = await portfolioDB.sellPortfolioAmount({
-      id: portfolioId,
-      market,
-      amount,
-      // tradedPrice,
-      volume,
-    });
-    if (isSellValid) {
-      const fund = await fundDB.updateAmount({ user, addedAmount: amount });
-      if (fund) {
-        fundId = fund._id;
-      }
-    } else {
-      status.addStatus(ErrorStatus.PORTFOLIO_AMOUNT_NOT_MATCH);
-    }
-  }
-
-  if (fundId) {
-    await tradeHistortryDB.trade({
-      user,
-      volume,
-      amount,
-      market,
-      tradedPrice,
-      type,
-      fundId: fundId,
-    });
   }
 
   DataResponse(res, status.getStatusList(), doc);

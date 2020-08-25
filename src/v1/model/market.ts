@@ -140,4 +140,8 @@ export class MarketDB {
     const doc = await Market.find({ active: true });
     return doc;
   }
+  async isMarketExist(id: IMarket["_id"]) {
+    const isExist = await Market.exists({ _id: id });
+    return isExist;
+  }
 }

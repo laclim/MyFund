@@ -61,7 +61,7 @@ export class FundDB {
       user,
       amount,
       initialAmount: amount,
-      history: [{ addedAmount: amount }],
+      history: [],
       portfolio,
     });
     return doc;

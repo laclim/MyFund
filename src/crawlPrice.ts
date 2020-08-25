@@ -8,17 +8,18 @@ import Axios from "axios";
 import { load, html } from "cheerio";
 import moment from "moment-timezone";
 import { FundDB } from "./v1/model/fund";
-import fetch from "node-fetch";
 console.log(moment().format("YYYY-MM-DD HH:MM"));
 export const task = cron.schedule(
-  "30 21 * * *",
+  "20 21 * * *",
   async () => {
-    if (moment().isoWeekday() !== 6 || moment().isoWeekday() !== 7) {
-      console.log("Runing a job at 16:30 at America/New York timezone");
-      console.log("Getting latest market price");
-      await getLatestMarket();
-      console.log("Calculating profit");
-      await calcPortfolioProfit();
+    if (process.env.NODE_ENV == "production") {
+      if (moment().isoWeekday() !== 6 || moment().isoWeekday() !== 7) {
+        console.log("Runing a job at 16:30 at America/New York timezone");
+        console.log("Getting latest market price");
+        await getLatestMarket();
+        console.log("Calculating profit");
+        await calcPortfolioProfit();
+      }
     }
   },
   {
@@ -60,18 +61,21 @@ export async function calcPortfolioProfit() {
       await historyPortfolioDB.createHistoryPortfolio(el._id, netProfit);
     }
   });
-  await getLatestMarket();
+  //   await getLatestMarket();
   return "asda";
 }
 
 async function getLatestMarket() {
   const marketDB = new MarketDB();
   const marketList = await marketDB.getList();
-  for (let market of marketList) {
-    console.log(market.quote);
-    const closingPrice = await getQuotePrice(market.type, market.quote!);
-    await updateMarketPrice(market._id, closingPrice);
-  }
+
+  await Promise.all(
+    marketList.map(async (market) => {
+      console.log(market.quote);
+      const closingPrice = await getQuotePrice(market.type, market.quote!);
+      await updateMarketPrice(market._id, closingPrice);
+    })
+  );
 }
 
 async function getQuotePrice(type: marketType, quote: string): Promise<number> {
@@ -112,9 +116,7 @@ async function getQuotePrice(type: marketType, quote: string): Promise<number> {
       const price = parseFloat(
         $(".overViewBox.instrument").find("#last_last").text()
       );
-      //   //   const strreg = str.match(/DARLA_CONFIG = ([^;]*);/)[1];
-      //   //   console.log(strreg);
-      //   //   var months = JSON.parse(strreg);
+
       console.log(price);
       resolve(price);
     });

@@ -9,6 +9,7 @@ export enum ErrorStatus {
   NO_RECORD_FOUND = "NO_RECORD_FOUND",
   INVEST_NOT_VALID = "INVEST_NOT_VALID",
   PORTFOLIO_AMOUNT_NOT_MATCH = "PORTFOLIO_AMOUNT_NOT_MATCH",
+  MARKET_NOT_CODE_EXIST = "MARKET_NOT_CODE_EXIST",
 }
 
 export interface IStatus {
@@ -74,6 +75,12 @@ export class Status {
           statusCode: 1008,
           statusMessage:
             "does not match your portfolio amount or you dont own this market",
+        };
+        break;
+      case ErrorStatus.MARKET_NOT_CODE_EXIST:
+        status = {
+          statusCode: 1009,
+          statusMessage: "market code does not exist",
         };
         break;
       default:
