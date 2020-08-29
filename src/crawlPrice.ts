@@ -14,7 +14,7 @@ export const task = cron.schedule(
   async () => {
     if (process.env.NODE_ENV == "production") {
       if (moment().isoWeekday() !== 6 || moment().isoWeekday() !== 7) {
-        console.log("Runing a job at 16:30 at America/New York timezone");
+        console.log(`Runing a job at ${moment().format("YYYY-MM-DD HH:MM")}`);
         console.log("Getting latest market price");
         await getLatestMarket();
         console.log("Calculating profit");
@@ -52,7 +52,8 @@ export async function calcPortfolioProfit() {
     }
     const fund = await fundDB.getFundByPortfolioID(el._id);
     const todayAmount = fund?.amount! + portfolioProfit;
-    const netProfit = (todayAmount - fund?.initialAmount!) / todayAmount;
+    const netProfit =
+      (todayAmount - fund?.initialAmount!) / fund?.initialAmount!;
 
     const historyPortfolioDB = new HistoryPortfolioDB();
     if (await historyPortfolioDB.checkExist(el._id)) {
@@ -61,7 +62,7 @@ export async function calcPortfolioProfit() {
       await historyPortfolioDB.createHistoryPortfolio(el._id, netProfit);
     }
   });
-  //   await getLatestMarket();
+  // await getLatestMarket();
   return "asda";
 }
 

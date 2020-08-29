@@ -30,7 +30,7 @@ const schema = new Schema(
     user: { type: Schema.Types.ObjectId, ref: "User", required: true },
     amount: { type: Number, required: true },
     initialAmount: { type: Number, required: true },
-    investedAmount: { type: Number, required: true },
+
     history: { type: [HistorySchema], default: [] },
     isPublic: { type: Boolean, default: true },
     portfolio: {
@@ -70,6 +70,13 @@ export class FundDB {
     const doc = await Fund.findOne({ _id: id })
       .populate("user", "name _id")
       .populate("portfolio");
+    return doc;
+  }
+  async getFundList() {
+    const doc = await Fund.find({})
+      .populate("user", "name _id")
+      .populate("portfolio");
+
     return doc;
   }
 

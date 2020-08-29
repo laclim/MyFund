@@ -5,7 +5,13 @@ import { BadRequest, Unauthorized } from "./response";
 import { generateGuid, generateToken, trycatch, extractToken } from "./utility";
 
 import { addUser, login } from "./api/user";
-import { addFund, getFund, investFund } from "./api/fund";
+import {
+  addFund,
+  getFund,
+  getFunds,
+  getPortfolioHistory,
+  investFund,
+} from "./api/fund";
 import multer from "multer";
 import {
   createMarket,
@@ -22,9 +28,15 @@ const upload = multer({ dest: "uploads/" });
 const publicRoute = Router();
 publicRoute.post("/user", trycatch(addUser));
 publicRoute.post("/login", trycatch(login));
+publicRoute.get("/funds", trycatch(getFunds));
 publicRoute.get("/fund/:id", trycatch(getFund));
 publicRoute.get("/market/:id", trycatch(getMarket));
 publicRoute.get("/market", trycatch(getMarkets));
+publicRoute.get(
+  "/portfolioHistory/:portfolioID",
+  trycatch(getPortfolioHistory)
+);
+
 // private
 
 const privateRoute = Router();

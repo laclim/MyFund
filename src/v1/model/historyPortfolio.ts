@@ -8,7 +8,7 @@ interface IHistoryPortfolio extends Document {
   portfolio: IPortfolio["_id"];
 }
 
-interface IHistoryPortfolioDetails {
+export interface IHistoryPortfolioDetails {
   profitPercentage: number;
 }
 
@@ -74,5 +74,36 @@ export class HistoryPortfolioDB {
       }
     );
     return doc;
+  }
+
+  async getLastGain(portfolioId: IPortfolio["_id"]) {
+    const doc = await HistoryPortfolio.findOne({
+      portfolio: portfolioId,
+    }).sort({ _id: -1 });
+    if (doc) return doc?.details.reverse()[0];
+    else return { profitPercentage: 0 };
+  }
+
+  async getAllPortfolioHistoryDetails(
+    portfolioId: IPortfolio["_id"],
+    month?: number
+  ) {
+    let doc;
+    let data: any[] = [];
+    if (month) {
+      doc = await HistoryPortfolio.find({ portfolio: portfolioId })
+        .sort({ _id: -1 })
+        .limit(month);
+    } else {
+      doc = await HistoryPortfolio.find({ portfolio: portfolioId }).sort({
+        _id: -1,
+      });
+    }
+    doc.forEach((el) => {
+      el.details.reverse();
+      data = data.concat(el.details);
+    });
+
+    return data;
   }
 }

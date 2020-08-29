@@ -13,6 +13,10 @@ import {
 } from "../model/tradeHistory";
 import { PortfolioDB } from "../model/portfolio";
 import { MarketDB } from "../model/market";
+import {
+  HistoryPortfolioDB,
+  IHistoryPortfolioDetails,
+} from "../model/historyPortfolio";
 
 interface fundRequest {
   amount: number;
@@ -43,8 +47,8 @@ export const getFund = async (
 ) => {
   let data = {};
   const statusList = new Status();
-  const userId = req.params.id;
-  const fund = await fundDB.getFund(userId);
+  const fundId = req.params.id;
+  const fund = await fundDB.getFund(fundId);
   console.log(process.env.NODE_ENV);
   if (fund) {
     data = { ...data, fund };
@@ -54,6 +58,48 @@ export const getFund = async (
     statusList.addStatus(ErrorStatus.NO_RECORD_FOUND);
     DataResponse(res, statusList.getStatusList());
   }
+};
+
+export const getFunds = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  let data: any[] = [];
+  const statusList = new Status();
+  const historyPortfolioDB = new HistoryPortfolioDB();
+  const fundList = await fundDB.getFundList();
+  await Promise.all(
+    fundList.map(async (el, i) => {
+      const lastDayGain = await historyPortfolioDB.getLastGain(el.portfolio);
+
+      data.push({ ...el.toJSON(), lastDayGain });
+    })
+  );
+
+  if (fundList) {
+    DataResponse(res, statusList.getStatusList(), data);
+  } else {
+    statusList.addStatus(ErrorStatus.NO_RECORD_FOUND);
+    DataResponse(res, statusList.getStatusList());
+  }
+};
+
+export const getPortfolioHistory = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const portfolioID = req.params.portfolioID;
+  let month: any = req.query.month || "";
+
+  const statusList = new Status();
+  const historyPortfolioDB = new HistoryPortfolioDB();
+  const data = await historyPortfolioDB.getAllPortfolioHistoryDetails(
+    portfolioID,
+    parseInt(month)
+  );
+  DataResponse(res, statusList.getStatusList(), data);
 };
 
 export const investFund = async (
