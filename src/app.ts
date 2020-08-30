@@ -8,7 +8,8 @@ export const AppConfig = () => {
   const app = express();
   app.use(express.json());
   task.start();
-  app.use(cors({ credentials: true }));
+  app.use(cors({ origin: true, credentials: true }));
+  app.options("*", cors());
   app.use(cookieParser());
   app.use("/api/v1", v1);
   app.use(function (req, res, next) {
