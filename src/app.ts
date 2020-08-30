@@ -3,11 +3,13 @@ import session, { Store } from "express-session";
 import { task } from "./crawlPrice";
 import { default as v1 } from "./v1/routes";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 export const AppConfig = () => {
   const app = express();
   app.use(express.json());
   task.start();
-  app.use(cors({ origin: "http://localhost:8000",credentials:true }));
+  app.use(cors({ origin: "http://localhost:8000", credentials: true }));
+  app.use(cookieParser());
   app.use("/api/v1", v1);
   app.use(function (req, res, next) {
     res.status(404).json({ message: "Not Found" });

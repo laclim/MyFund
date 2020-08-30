@@ -66,6 +66,13 @@ export class FundDB {
     });
     return doc;
   }
+  async getFundByUserId(id: IUser["_id"]) {
+    const doc = await Fund.findOne({ user: id })
+      .populate("user", "name _id")
+      .populate("portfolio");
+    return doc;
+  }
+
   async getFund(id: IFund["_id"]) {
     const doc = await Fund.findOne({ _id: id })
       .populate("user", "name _id")

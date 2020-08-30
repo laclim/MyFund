@@ -40,8 +40,21 @@ export const login = async (
   const user = await User.findOne({ email, password });
   if (user) {
     const token = generateToken(user.id);
-    data = { token };
+    data = { user, token };
   } else status.addStatus(ErrorStatus.INVALID_CREDENTIALS);
 
   DataResponse(res, status.getStatusList(), data);
+};
+
+export const getMe = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const status = new Status();
+
+  const userId = req.headers.userId;
+  const doc = await User.findById(userId);
+
+  DataResponse(res, status.getStatusList(), doc);
 };

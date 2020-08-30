@@ -60,6 +60,26 @@ export const getFund = async (
   }
 };
 
+export const getMyFund = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  let data = {};
+  const statusList = new Status();
+  const userId = req.headers.userId;
+  const fund = await fundDB.getFundByUserId(userId);
+  console.log(process.env.NODE_ENV);
+  if (fund) {
+    data = { ...data, fund };
+
+    DataResponse(res, statusList.getStatusList(), fund);
+  } else {
+    statusList.addStatus(ErrorStatus.NO_RECORD_FOUND);
+    DataResponse(res, statusList.getStatusList());
+  }
+};
+
 export const getFunds = async (
   req: Request,
   res: Response,

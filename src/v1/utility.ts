@@ -30,21 +30,27 @@ export const extractToken = async (
   res: Response,
   next: NextFunction
 ) => {
-  if (
-    req.headers.authorization &&
-    req.headers.authorization.split(" ")[0] === "Bearer"
-  ) {
-    try {
-      const token = req.headers.authorization.split(" ")[1];
-      jwt.verify(token, process.env.JWT_SECRET!);
-      const decoded = jwt.decode(token, { complete: true });
-
-      req.headers.userId = (decoded as any).payload.userId;
-      next();
-    } catch (error) {
+  let token = "";
+  if (req.cookies.token) {
+    token = req.cookies.token;
+  }
+  if (!token) {
+    if (
+      req.headers.authorization &&
+      req.headers.authorization.split(" ")[0] === "Bearer"
+    ) {
+      token = req.headers.authorization.split(" ")[1];
+    } else {
       next(new Unauthorized());
     }
-  } else {
+  }
+  try {
+    jwt.verify(token, process.env.JWT_SECRET!);
+    const decoded = jwt.decode(token, { complete: true });
+    console.log(decoded);
+    req.headers.userId = (decoded as any).payload.userId;
+    next();
+  } catch (error) {
     next(new Unauthorized());
   }
   return null;
