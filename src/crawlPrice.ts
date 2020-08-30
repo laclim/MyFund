@@ -8,13 +8,14 @@ import Axios from "axios";
 import { load, html } from "cheerio";
 import moment from "moment-timezone";
 import { FundDB } from "./v1/model/fund";
-console.log(moment().format("YYYY-MM-DD HH:MM"));
+console.log(moment().format("YYYY-MM-DD HH:MM a"));
+
 export const task = cron.schedule(
   "20 21 * * *",
   async () => {
     if (process.env.NODE_ENV == "production") {
-      if (moment().isoWeekday() !== 6 || moment().isoWeekday() !== 7) {
-        console.log(`Runing a job at ${moment().format("YYYY-MM-DD HH:MM")}`);
+      if (moment().isoWeekday() !== 6 && moment().isoWeekday() !== 7) {
+        console.log(`Runing a job at ${moment().format("YYYY-MM-DD HH:MM a")}`);
         console.log("Getting latest market price");
         await getLatestMarket();
         console.log("Calculating profit");
